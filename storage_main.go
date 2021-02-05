@@ -23,7 +23,7 @@ import .	"junk"			// misc helper functions
 //
 // #include <sys/types.h>
 // #include "tcmu-runner.h"
-// int tcmu_main_thunk(void);
+// extern int tcmu_main_thunk(void);
 import "C"
 
 const SECTOR_SIZE = 4096	// min I/O alignment (offset and length)
@@ -356,9 +356,9 @@ func main() {
 
     Notify("Front-end volume nbyte: %v", probe_reply.Nbyte)
 
-    C.tcmu_main_thunk()  // call tcmu_main()
+    ret := C.tcmu_main_thunk()  // call tcmu_main()
 
-    fmt.Printf("tcmu_main returned!\n")
+    fmt.Printf("tcmu_main returned %v\n", ret)
 
     if do_dump {
 	Notify("Configuration:\n%s\n", Tree_string(&entry_node, 4))

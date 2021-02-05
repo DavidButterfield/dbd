@@ -241,11 +241,12 @@ func sector_dump(secnum int, sector_bytes []byte) {
 	    secnum, hdr.seqno, hdr.rslots, hdr.xslots, hdr.last_rslotnum, hdr.version, hdr.sector_checksum)
 }
 
-func (L *Pa_log_t) sector_check(sector_bytes []byte) error {
+func (L *Pa_log_t) sector_check(file_ofs int, sector_bytes []byte) error {
     hdr := hdr_of_sector(sector_bytes)
-    sum := crc32.ChecksumIEEE(sector_bytes[4:L.Cfg.Bytes_hdr_per_sector])
+    sum := crc32.ChecksumIEEE(sector_bytes[4:])
     if sum != hdr.sector_checksum {
-	Ewarn(nil, "checksum error on sector")
+	Ewarn(nil, "checksum error on MD sector at file_ofs=%v: sum=0x%8x expected=0x%8x", file_ofs, sum, hdr.sector_checksum)
+	sector_dump(file_ofs/int(L.Cfg.Bytes_per_sector), sector_bytes)
 	return EMETAREAD
     }
     if hdr.version != L.Cfg.Version {
@@ -486,10 +487,11 @@ func (L *Pa_log_t) analyze() error {
 	    return EMETAREAD
 	}
 
-	err = L.sector_check(sector_bytes)
+	err = L.sector_check(file_ofs, sector_bytes)
 	if err != nil {
-	    Ewarn(err, "sector_check failed")
-	    return err
+	    Ewarn(err, "XXX IGNORING sector_check failed")
+	    err = nil
+	    // return err
 	}
 	hdr := hdr_of_sector(sector_bytes)
 
@@ -634,10 +636,11 @@ func (L *Pa_log_t) Read(closure func ([]byte)) error {
 	    fmt.Printf("ReadAt file_ofs=%v count=%v\n", file_ofs, count)
 	}
 
-	err = L.sector_check(sector_bytes)
+	err = L.sector_check(file_ofs, sector_bytes)
 	if err != nil {
-	    Ewarn(err, "sector_check failed")
-	    return err
+	    Ewarn(err, "XXX IGNORING sector_check failed")
+	    err = nil
+	    // return err
 	}
 	hdr := hdr_of_sector(sector_bytes)
 
@@ -822,7 +825,7 @@ func sector_finish(sector_bytes []byte,
     hdr.rslots = cfg.Rslots_max_per_sector
 
     /* compute and set sector checksum */
-    hdr.sector_checksum = crc32.ChecksumIEEE(sector_bytes[4:int(cfg.Bytes_hdr_per_sector)])
+    hdr.sector_checksum = crc32.ChecksumIEEE(sector_bytes[4:])
 
     return nil
 }
@@ -1087,7 +1090,7 @@ func (L *Pa_log_t) Flush() {
 /* Send a flush closure and wait for it to complete */
 func (L *Pa_log_t) Flush_wait() {
     /* Fake transaction to flush through those before it */
-    var flush_txbytes = make([]byte, int(L.Cfg.Bytes_per_slot))
+    var flush_txbytes = make([]byte, L.Cfg.Bytes_per_slot)
     for i := range flush_txbytes {
 	flush_txbytes[i] = 0xff
     }

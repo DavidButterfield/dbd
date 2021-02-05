@@ -549,6 +549,9 @@ func (PA *Pa_array) close() error {
 }
 
 func (PA *Pa_array) Dump() {
+    if PA == nil {
+	panic("PA == nil")
+    }
     fmt.Printf("%v\n\n", PA.log)
     for i, data := range PA.Slot {
 	Verbose("%d: sync=%x flags=%x\n", i, data.Sync, data.Flags)
