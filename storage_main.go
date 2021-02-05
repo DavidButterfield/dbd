@@ -57,7 +57,7 @@ var store_list = []*store.Store_node { &store_0, &store_1 }
 var rpcs_1 = node.Rpcs_node {
     Name:		"rpcs_1",
     Rpc_name:		"Store",
-    Host:		"heavy.local",
+    Host:		"",
     Port:		"1234",
     Down:		node.Node(&store_1)	}
 
@@ -75,7 +75,7 @@ var dup_ = mirror.Dup_node {
 /* Interface for external requests */
 var entry_node = node.Nop_node {
     Name:		"entry",
-    Host:		"blackbox.local",
+    Host:		"",
     Down:		node.Node(&dup_)	}
 
 /* Return the list of nodes below the given node */
@@ -247,7 +247,7 @@ func main() {
 		ok = false
 		continue
 	    }
-	    // XXX entry_node.Host = os.Args[i+0]
+	    entry_node.Host = os.Args[i+1]
 	    i++
 	} else if arg == "--back" {
 	    if i+1 >= len(os.Args) || os.Args[i+1][0] == '-' {
@@ -343,8 +343,6 @@ func main() {
     time.Sleep(1*time.Second)
     Notify("Awake(1)")
 
-    Notify("Front-end volume nbyte: %v", probe_reply.Nbyte)
-
     // Catch SIGINT
     sigchan := make(chan os.Signal, 1)
     signal.Notify(sigchan, os.Interrupt)
@@ -355,6 +353,8 @@ func main() {
 	Chat("\n\n*** SIGNAL FIRED ***\n\n")
 	// os.Exit(0)
     }()
+
+    Notify("Front-end volume nbyte: %v", probe_reply.Nbyte)
 
     C.tcmu_main_thunk()  // call tcmu_main()
 
